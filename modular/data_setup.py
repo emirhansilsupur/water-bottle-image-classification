@@ -19,6 +19,7 @@ from torch.utils.data import Dataset
 from PIL import Image
 import pandas as pd
 
+
 def find_classes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, int]]:
     """
     Finds class names by scanning the target directory.
@@ -36,6 +37,7 @@ def find_classes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, int]]:
     class_to_idx = {class_name: i for i, class_name in enumerate(classes)}
 
     return classes, class_to_idx
+
 
 class CustomImageFolder(Dataset):
     """
@@ -111,7 +113,10 @@ class CustomImageFolder(Dataset):
         else:
             return img, class_idx
 
-def create_dataloaders(train_dir: str, test_dir: str, transform: transforms.Compose,batch_size: int) -> Tuple[DataLoader, DataLoader, List[str]]:
+
+def create_dataloaders(
+    train_dir: str, test_dir: str, transform: transforms.Compose, batch_size: int
+) -> Tuple[DataLoader, DataLoader, List[str]]:
     """
     Creates and returns train and test dataloaders along with class names.
 
@@ -132,7 +137,11 @@ def create_dataloaders(train_dir: str, test_dir: str, transform: transforms.Comp
 
     class_names = train_data_transformed.classes
 
-    train_dataloader = DataLoader(train_data_transformed, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_data_transformed, batch_size=batch_size, shuffle=False)
+    train_dataloader = DataLoader(
+        train_data_transformed, batch_size=batch_size, shuffle=True
+    )
+    test_dataloader = DataLoader(
+        test_data_transformed, batch_size=batch_size, shuffle=False
+    )
 
     return train_dataloader, test_dataloader, class_names
