@@ -4,6 +4,8 @@ Modular Data Setup
 This module contains functions and classes for setting up data for machine learning models.
 
 Functions:
+- create_dataframe(data_path: str) -> Tuple[pd.DataFrame, pd.DataFrame]: Creates a Pandas dataframe containing the path of all images and their respective classes for training and testing
+- augment_dataset(dataset_dir: str) -> torch.utils.data.Dataset: Loads and augments images from a directory using torchvision's ImageFolder class
 - find_classes(data) -> Tuple[List[str], Dict[str, int]]: Finds class names by scanning the target directory
 - create_dataloaders(train_dir: str,test_dir: str,transform: transforms.Compose,batch_size: int) -> Tuple[DataLoader, DataLoader, List[str]]: Creates and returns train and test dataloaders along with class names
 
@@ -11,13 +13,91 @@ Classes:
 - CustomImageFolder(Dataset): Custom Image folder dataset class
 
 """
-import torch
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
-from typing import List, Tuple, Dict
-from torch.utils.data import Dataset
-from PIL import Image
+import os
 import pandas as pd
+from typing import List, Tuple, Dict
+from PIL import Image
+
+import torch
+import torchvision
+from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import train_test_split
+
+
+def create_dataframe(data_path):
+    """Creates a Pandas dataframe containing the path of all images and their respective classes.
+
+    Args:
+        data_path (str): Path to the folder containing the images.
+
+    Returns:
+        Pandas dataframe: Dataframe containing image paths and their respective classes.
+    """
+    image_list = []
+
+    for dirpath, dirnames, filenames in os.walk(data_path):
+        for filename in filenames:
+            if filename.endswith(".jpeg") or filename.endswith(".jpg"):
+                image_list.append(
+                    {
+                        "path": os.path.join(dirpath, filename),
+                        "classes": os.path.basename(dirpath),
+                    }
+                )
+
+    df = pd.DataFrame(image_list)
+    df["classes"] = df["classes"].map(
+        {
+            "Full  Water level": "full",
+            "Half water level": "half",
+            "Overflowing": "overflowing",
+        }
+    )
+
+    train_df, test_df = train_test_split(
+        df, test_size=0.2, shuffle=True, random_state=42, stratify=df["classes"]
+    )
+
+    return train_df, test_df
+
+
+def augment_dataset(dataset_dir):
+    """
+    Loads and augments images from a directory using torchvision's ImageFolder class.
+
+    Args:
+        dataset_dir (str): Path to directory containing images.
+
+    Returns:
+        torch.utils.data.Dataset: A PyTorch dataset object containing the images.
+    """
+    transforms = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(20),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+        ]
+    )
+
+    dataset = torchvision.datasets.ImageFolder(dataset_dir, transform=transforms)
+
+    count = len(dataset)
+    if count < 1000:
+        while count < 1000:
+            for i, (image, label) in enumerate(dataset):
+                new_filename = f"image{count + i + 1:03d}.jpeg"
+                new_path = os.path.join(dataset_dir, new_filename)
+                torchvision.utils.save_image(image, new_path)
+                count = len(os.listdir(dataset_dir))
+                if count >= 1000:
+                    break
+            dataset = torchvision.datasets.ImageFolder(
+                dataset_dir, transform=transforms
+            )
+
+    return dataset
 
 
 def find_classes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, int]]:
