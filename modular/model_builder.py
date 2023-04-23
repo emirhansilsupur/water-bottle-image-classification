@@ -6,7 +6,13 @@ import torch
 import torchvision
 from torchinfo import summary
 
-def create_model(model_name:str, num_classes:int, freeze_features:bool=True, summary_model:bool=True):
+
+def create_model(
+    model_name: str,
+    num_classes: int,
+    freeze_features: bool = True,
+    summary_model: bool = True,
+):
     """
     Creates and returns a PyTorch pre-trained models based on the given model name and number of classes.
 
@@ -31,7 +37,7 @@ def create_model(model_name:str, num_classes:int, freeze_features:bool=True, sum
         # Update the last layer of the model for the specified number of classes
         num_ftrs = model._fc.in_features
         model._fc = torch.nn.Linear(num_ftrs, num_classes)
-        
+        model_transform = weights.transforms()
 
     elif model_name == "ResNet18":
         weights = torchvision.models.ResNet18_Weights.DEFAULT
@@ -41,6 +47,7 @@ def create_model(model_name:str, num_classes:int, freeze_features:bool=True, sum
                 param.requires_grad = False
         num_ftrs = model.fc.in_features
         model.fc = torch.nn.Linear(num_ftrs, num_classes)
+        model_transform = weights.transforms()
 
     elif model_name == "GoogLeNet":
         weights = torchvision.models.GoogLeNet_Weights.DEFAULT
@@ -50,8 +57,15 @@ def create_model(model_name:str, num_classes:int, freeze_features:bool=True, sum
                 param.requires_grad = False
         num_ftrs = model.fc.in_features
         model.fc = torch.nn.Linear(num_ftrs, num_classes)
+        model_transform = weights.transforms()
     # Print a summary of the model if summary_model is True
     if summary_model:
-        summary(model=model, input_size=(3, 224, 224), col_names=["input_size", "output_size", "num_params", "trainable"], col_width=20, row_settings=["var_names"])
-    
-    return model
+        summary(
+            model=model,
+            input_size=(3, 224, 224),
+            col_names=["input_size", "output_size", "num_params", "trainable"],
+            col_width=20,
+            row_settings=["var_names"],
+        )
+
+    return model, model_transform
