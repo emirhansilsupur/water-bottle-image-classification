@@ -36,12 +36,12 @@ def create_dataframe(data_path):
     """
     image_list = []
 
-    for dirpath, dirnames, filenames in os.walk(data_path):
+    for dirpath, dirnames, filenames in os.walk(str(data_path)):
         for filename in filenames:
             if filename.endswith(".jpeg") or filename.endswith(".jpg"):
                 image_list.append(
                     {
-                        "path": os.path.join(dirpath, filename),
+                        "path": dirpath + os.sep + filename,
                         "classes": os.path.basename(dirpath),
                     }
                 )
@@ -62,17 +62,17 @@ def create_dataframe(data_path):
     return train_df, test_df
 
 
-def augment_dataset(dataset_dir):
+def augment_dataset(class_dir):
     """
     Loads and augments images from a directory using torchvision's ImageFolder class.
 
     Args:
-        dataset_dir (str): Path to directory containing images.
+        class_dir (str): Path to directory containing images.
 
     Returns:
         torch.utils.data.Dataset: A PyTorch dataset object containing the images.
     """
-    transforms = transforms.Compose(
+    transform = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(20),
@@ -81,23 +81,21 @@ def augment_dataset(dataset_dir):
         ]
     )
 
-    dataset = torchvision.datasets.ImageFolder(dataset_dir, transform=transforms)
+    dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
 
     count = len(dataset)
     if count < 1000:
         while count < 1000:
             for i, (image, label) in enumerate(dataset):
                 new_filename = f"image{count + i + 1:03d}.jpeg"
-                new_path = os.path.join(dataset_dir, new_filename)
+                new_path = os.path.join(class_dir, new_filename)
                 torchvision.utils.save_image(image, new_path)
-                count = len(os.listdir(dataset_dir))
+                count = len(os.listdir(class_dir))
                 if count >= 1000:
                     break
-            dataset = torchvision.datasets.ImageFolder(
-                dataset_dir, transform=transforms
-            )
+            dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
 
-    return dataset
+    return
 
 
 def find_classes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, int]]:
