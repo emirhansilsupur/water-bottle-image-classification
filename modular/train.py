@@ -3,12 +3,13 @@ Trains a PyTorch image classification model using device-agnostic code.
 """
 import argparse
 from pathlib import Path
+from timeit import default_timer as timer
 import torch
 from torchmetrics import F1Score, FBetaScore
-from modular import data_setup, engine, model_builder, utils
+import data_setup, engine, model_builder, utils
 
 # Setting up data directory
-data_path = (Path("data/"),)
+data_path = Path("data/")
 data_path.mkdir(parents=True, exist_ok=True)
 
 # Setting up arguments parser
@@ -60,11 +61,19 @@ parser.add_argument(
     help="The path to the directory where the overflowing water level data files are stored.",
 )
 
+parser.add_argument(
+    "--model_name",
+    default="EfficientNet_B0",
+    type=str,
+    help="This argument specifies the type of model to be used for a certain task, with the default being the EfficientNet_B0 architecture.",
+)
+
 args = parser.parse_args()
 
 NUM_EPOCHS = args.num_epochs
 BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
+MODEL_NAME = args.model_name
 
 print(f"[INFO] Number of epochs: {NUM_EPOCHS}")
 print(f"[INFO] Batch size: {BATCH_SIZE}")
@@ -83,25 +92,16 @@ print(f"[INFO] Oveflowing_data dir: {overflowing_data_dir}")
 # Setup target device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Creating the model using EfficientNet_B0 architecture
-model_name = "EfficientNet_B0"
-model, data_transform = model_builder.create_model(model_name=model_name, num_classes=3)
+# Creating the model architecture
+model, data_transform = model_builder.create_model(model_name=MODEL_NAME, num_classes=3)
 
 # Augmenting data from all types of water levels
-augmented_full_data = data_setup.augment_dataset(
-    class_dir=full_data_dir, dataset_dir=data_dir
-)
-augmented_half_data = data_setup.augment_dataset(
-    class_dir=half_data_dir, dataset_dir=data_dir
-)
-augmented_overflowing_data = data_setup.augment_dataset(
-    class_dir=overflowing_data_dir, dataset_dir=data_dir
-)
-# Merging all the augmented data
-augmented_data = [augmented_full_data, augmented_half_data, augmented_overflowing_data]
+data_setup.augment_dataset(class_dir=full_data_dir, dataset_dir=data_dir)
+data_setup.augment_dataset(class_dir=half_data_dir, dataset_dir=data_dir)
+data_setup.augment_dataset(class_dir=overflowing_data_dir, dataset_dir=data_dir)
 
 # Creating train and test dataframes
-train_df, test_df = data_setup.create_dataframe(augmented_data)
+train_df, test_df = data_setup.create_dataframe(data_path=data_path)
 
 # Create dataloaders
 train_dataloader, test_dataloader, class_names = data_setup.create_dataloaders(
@@ -115,8 +115,15 @@ loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 
 # Set evaluation metrics
-fbeta_score = FBetaScore(task="multiclass", num_classes=3, beta=0.5).to(device)
-f1_score = F1Score(task="multiclass", num_classes=3, average="macro").to(device)
+fbeta_score = FBetaScore(task="multiclass", num_classes=len(class_names), beta=0.5).to(
+    device
+)
+f1_score = F1Score(task="multiclass", num_classes=len(class_names), average="macro").to(
+    device
+)
+
+# Start the timer
+start_time = timer()
 
 # Starting training
 results = engine.train(
@@ -131,5 +138,9 @@ results = engine.train(
     device=device,
 )
 
+# End the timer and print out how long it took
+end_time = timer()
+print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
+
 # Save the model
-utils.save_model(model=model, target_dir="models", model_name="model_name.pth")
+utils.save_model(model=model, target_dir="models", model_name=f"{MODEL_NAME}.pth")
