@@ -140,17 +140,17 @@ def train(
         )
         # scheduler.step()
 
-        if epoch % 10 == 0:
+        # if epoch % 5 == 0:
 
-            print(
-                f"Epoch: {epoch}\n "
-                f"train_loss: {train_loss:.4f} | "
-                f"train_fbeta_score: {np.round(train_fbeta_score.item(),4)*100}% | "
-                f"train_f1_score: {np.round(train_f1_score.item(),4)*100}% | \n "
-                f"test_loss: {test_loss:.4f} | "
-                f"test_fbeta_score: {np.round(test_fbeta_score.item(),2)*100}% | "
-                f"test_f1_score: {np.round(test_f1_score.item(),2)*100}%"
-            )
+        print(
+            f"Epoch: {epoch+1} \n "
+            f"train_loss: {train_loss:.4f} | "
+            f"train_fbeta_score: {np.round(train_fbeta_score.item(),4)*100}% | "
+            f"train_f1_score: {np.round(train_f1_score.item(),4)*100}% | \n "
+            f"test_loss: {test_loss:.4f} | "
+            f"test_fbeta_score: {np.round(test_fbeta_score.item(),2)*100}% | "
+            f"test_f1_score: {np.round(test_f1_score.item(),2)*100}%"
+        )
         # --> lr: {scheduler.get_last_lr()[0]}
 
         results["train_loss"].append(train_loss.cpu().detach().numpy())
