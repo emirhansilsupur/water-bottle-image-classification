@@ -65,7 +65,14 @@ parser.add_argument(
     "--model_name",
     default="EfficientNet_B0",
     type=str,
-    help="This argument specifies the type of model to be used for a certain task, with the default being the EfficientNet_B0 architecture.",
+    help="This argument specifies the type of model to be used for a certain task, with the default being the EfficientNet_B0 architecture. default (EfficientNet_B0)",
+)
+
+parser.add_argument(
+    "--number_of_augmented_image",
+    default=1000,
+    type=int,
+    help="The argument specifies the default number of augmented images to generate during image data augmentation. default (1000)",
 )
 
 args = parser.parse_args()
@@ -74,10 +81,12 @@ NUM_EPOCHS = args.num_epochs
 BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 MODEL_NAME = args.model_name
+NUM_OF_AUG_IMG = args.number_of_augmented_image
 
 print(f"[INFO] Number of epochs: {NUM_EPOCHS}")
 print(f"[INFO] Batch size: {BATCH_SIZE}")
 print(f"[INFO] Learning rate: {LEARNING_RATE}")
+print(f"[INFO] Number of Augmented Image: {NUM_OF_AUG_IMG}")
 
 data_dir = args.data_dir
 full_data_dir = args.full_dir
@@ -96,9 +105,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, data_transform = model_builder.create_model(model_name=MODEL_NAME, num_classes=3)
 
 # Augmenting data from all types of water levels
-data_setup.augment_dataset(class_dir=full_data_dir, dataset_dir=data_dir)
-data_setup.augment_dataset(class_dir=half_data_dir, dataset_dir=data_dir)
-data_setup.augment_dataset(class_dir=overflowing_data_dir, dataset_dir=data_dir)
+data_setup.augment_dataset(class_dir=full_data_dir,number_of_image=NUM_OF_AUG_IMG)
+data_setup.augment_dataset(class_dir=half_data_dir,number_of_image=NUM_OF_AUG_IMG)
+data_setup.augment_dataset(class_dir=overflowing_data_dir,number_of_image=NUM_OF_AUG_IMG)
 
 # Creating train and test dataframes
 train_df, test_df = data_setup.create_dataframe(data_path=data_path)

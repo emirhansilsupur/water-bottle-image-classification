@@ -62,12 +62,14 @@ def create_dataframe(data_path):
     return train_df, test_df
 
 
-def augment_dataset(class_dir):
+def augment_dataset(class_dir, number_of_image):
     """
     Loads and augments images from a directory using torchvision's ImageFolder class.
 
     Args:
         class_dir (str): Path to directory containing images.
+        number_of_image (int): The argument specifies the desired number of augmented images to generate if the initial dataset
+        has less than this number of images.
 
     Returns:
         torch.utils.data.Dataset: A PyTorch dataset object containing the images.
@@ -84,14 +86,14 @@ def augment_dataset(class_dir):
     dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
 
     count = len(dataset)
-    if count < 1000:
-        while count < 1000:
+    if count < number_of_image:
+        while count < number_of_image:
             for i, (image, label) in enumerate(dataset):
                 new_filename = f"image{count + i + 1:03d}.jpeg"
                 new_path = os.path.join(class_dir, new_filename)
                 torchvision.utils.save_image(image, new_path)
                 count = len(os.listdir(class_dir))
-                if count >= 1000:
+                if count >= number_of_image:
                     break
             dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
 
