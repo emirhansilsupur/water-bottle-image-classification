@@ -5,7 +5,7 @@ import argparse
 from pathlib import Path
 from timeit import default_timer as timer
 import torch
-from torchmetrics import F1Score, FBetaScore
+from torchmetrics import Accuracy, FBetaScore
 import data_setup, engine, model_builder, utils
 
 # Setting up data directory
@@ -42,21 +42,21 @@ parser.add_argument(
 
 parser.add_argument(
     "--full_dir",
-    default="data\Full  Water level",
+    default="data/Full  Water level",
     type=str,
     help="The path to the directory where the full water level data files are stored.",
 )
 
 parser.add_argument(
     "--half_dir",
-    default="data\Half water level",
+    default="data/Half water level",
     type=str,
     help="The path to the directory where the half water level data files are stored.",
 )
 
 parser.add_argument(
     "--overflowing_dir",
-    default="data\Overflowing",
+    default="data/Overflowing",
     type=str,
     help="The path to the directory where the overflowing water level data files are stored.",
 )
@@ -118,9 +118,7 @@ optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 fbeta_score = FBetaScore(task="multiclass", num_classes=len(class_names), beta=0.5).to(
     device
 )
-f1_score = F1Score(task="multiclass", num_classes=len(class_names), average="macro").to(
-    device
-)
+acc_score = Accuracy(task="multiclass", num_classes=len(class_names)).to(device)
 
 # Start the timer
 start_time = timer()
@@ -134,7 +132,7 @@ results = engine.train(
     loss_fn=loss_fn,
     epochs=NUM_EPOCHS,
     fbeta_score=fbeta_score,
-    f1_score=f1_score,
+    acc_score=acc_score,
     device=device,
 )
 
