@@ -4,9 +4,16 @@ Trains a PyTorch image classification model using device-agnostic code.
 import argparse
 from pathlib import Path
 from timeit import default_timer as timer
+from datetime import datetime
+import os
+
 import torch
 from torchmetrics import Accuracy, FBetaScore
 import data_setup, engine, model_builder, utils
+from torch.utils.tensorboard import SummaryWriter
+import warnings
+
+warnings.filterwarnings("ignore")
 
 # Setting up data directory
 data_path = Path("data/")
@@ -83,6 +90,7 @@ LEARNING_RATE = args.learning_rate
 MODEL_NAME = args.model_name
 NUM_OF_AUG_IMG = args.number_of_augmented_image
 
+print(f"[INFO] Model: {MODEL_NAME}")
 print(f"[INFO] Number of epochs: {NUM_EPOCHS}")
 print(f"[INFO] Batch size: {BATCH_SIZE}")
 print(f"[INFO] Learning rate: {LEARNING_RATE}")
@@ -105,9 +113,11 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, data_transform = model_builder.create_model(model_name=MODEL_NAME, num_classes=3)
 
 # Augmenting data from all types of water levels
-data_setup.augment_dataset(class_dir=full_data_dir,number_of_image=NUM_OF_AUG_IMG)
-data_setup.augment_dataset(class_dir=half_data_dir,number_of_image=NUM_OF_AUG_IMG)
-data_setup.augment_dataset(class_dir=overflowing_data_dir,number_of_image=NUM_OF_AUG_IMG)
+data_setup.augment_dataset(class_dir=full_data_dir, number_of_image=NUM_OF_AUG_IMG)
+data_setup.augment_dataset(class_dir=half_data_dir, number_of_image=NUM_OF_AUG_IMG)
+data_setup.augment_dataset(
+    class_dir=overflowing_data_dir, number_of_image=NUM_OF_AUG_IMG
+)
 
 # Creating train and test dataframes
 train_df, test_df = data_setup.create_dataframe(data_path=data_path)
@@ -129,6 +139,44 @@ fbeta_score = FBetaScore(task="multiclass", num_classes=len(class_names), beta=0
 )
 acc_score = Accuracy(task="multiclass", num_classes=len(class_names)).to(device)
 
+
+def create_writer(
+    experiment_name=f"{NUM_OF_AUG_IMG}_data",
+    model_name=f"{MODEL_NAME}",
+    epoch=f"{NUM_EPOCHS}_epochs",
+    lr=f"{LEARNING_RATE}_lr",
+) -> torch.utils.tensorboard.writer.SummaryWriter:
+    """Creates a torch.utils.tensorboard.writer.SummaryWriter() instance saving to a specific log_dir.
+
+    log_dir is a combination of runs/timestamp/experiment_name/model_name/extra.
+
+    Where timestamp is the current date in YYYY-MM-DD format.
+
+    Args:
+        experiment_name (str): Name of experiment.
+        model_name (str): Name of model.
+        epoch (str): Epoch number.
+        lr (str): Learning rate used in the experiment.
+
+    Returns:
+        torch.utils.tensorboard.writer.SummaryWriter: Instance of a writer saving to log_dir.
+
+
+    """
+    # Get timestamp of current date (all experiments on certain day live in same folder)
+    timestamp = datetime.now().strftime(
+        "%Y-%m-%d"
+    )  # returns current date in YYYY-MM-DD format
+
+    log_dir_parts = ["runs", timestamp, experiment_name, model_name, epoch, lr]
+
+    # Create log directory path
+    log_dir = os.path.join(*log_dir_parts)
+
+    print(f"[INFO] Created SummaryWriter, saving to: {log_dir}...")
+    return SummaryWriter(log_dir=log_dir)
+
+
 # Start the timer
 start_time = timer()
 
@@ -143,11 +191,17 @@ results = engine.train(
     fbeta_score=fbeta_score,
     acc_score=acc_score,
     device=device,
+    writer=create_writer(),
 )
 
 # End the timer and print out how long it took
 end_time = timer()
 print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
 
+
 # Save the model
-utils.save_model(model=model, target_dir="models", model_name=f"{MODEL_NAME}.pth")
+model_filepath = (
+    f"01_{MODEL_NAME}_{NUM_OF_AUG_IMG}data_{NUM_EPOCHS}_epochs_{LEARNING_RATE}_lr.pth"
+)
+utils.save_model(model=model, target_dir="models", model_name=model_filepath)
+print("-" * 50 + "\n")
