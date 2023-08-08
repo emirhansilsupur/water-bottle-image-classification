@@ -100,6 +100,7 @@ def train(
     device,
     acc_score,
     fbeta_score,
+    writer,
 ):
     """
     Train the model for the given number of epochs and evaluate performance on a validation set.
@@ -114,6 +115,7 @@ def train(
     device (str): The device to use for training (e.g. 'cuda' or 'cpu').
     fbeta_score (function): The fbeta score function to use for evaluation.
     acc_score (function): The accuracy score function to use for evaluation.
+    writer: A SummaryWriter() instance to log model results to.
 
     Returns:
     dict: A dictionary containing the following metrics for each epoch:
@@ -134,7 +136,6 @@ def train(
     }
 
     for epoch in tqdm(range(epochs)):
-
         train_loss, train_acc, train_fbeta_score = train_step(
             model, train_dataloader, loss_fn, optimizer, acc_score, fbeta_score, device
         )
@@ -163,28 +164,31 @@ def train(
         results["test_acc"].append(test_acc.cpu().detach().numpy())
         results["test_fbeta_score"].append(test_fbeta_score.cpu().detach().numpy())
 
-        writer.add_scalars(
-            main_tag="Loss",
-            tag_scalar_dict={"train_loss": train_loss, "test_loss": test_loss},
-            global_step=epoch,
-        )
-        writer.add_scalars(
-            main_tag="F-Beta Scoree",
-            tag_scalar_dict={
-                "train_f0.5": train_fbeta_score,
-                "test_f0.5": test_fbeta_score,
-            },
-            global_step=epoch,
-        )
-        writer.add_scalars(
-            main_tag="Accuracy Score",
-            tag_scalar_dict={"train_acc": train_acc, "test_acc": test_acc},
-            global_step=epoch,
-        )
+        if writer:
+            writer.add_scalars(
+                main_tag="Loss",
+                tag_scalar_dict={"train_loss": train_loss, "test_loss": test_loss},
+                global_step=epoch,
+            )
+            writer.add_scalars(
+                main_tag="F-Beta Scoree",
+                tag_scalar_dict={
+                    "train_f0.5": train_fbeta_score,
+                    "test_f0.5": test_fbeta_score,
+                },
+                global_step=epoch,
+            )
+            writer.add_scalars(
+                main_tag="Accuracy Score",
+                tag_scalar_dict={"train_acc": train_acc, "test_acc": test_acc},
+                global_step=epoch,
+            )
 
-        writer.add_graph(
-            model=model, input_to_model=torch.rand(32, 3, 224, 224).to(device)
-        )
+            writer.add_graph(
+                model=model, input_to_model=torch.rand(32, 3, 224, 224).to(device)
+            )
 
-        writer.close()
+            writer.close()
+        else:
+            pass
     return results
