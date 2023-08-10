@@ -9,7 +9,7 @@ import os
 
 import torch
 from torchmetrics import Accuracy, FBetaScore
-import data_setup, engine, model_builder, utils
+import data_setup, engine, model_builder, utils, focalloss
 from torch.utils.tensorboard import SummaryWriter
 import warnings
 
@@ -82,6 +82,13 @@ parser.add_argument(
     help="The argument specifies the default number of augmented images to generate during image data augmentation. default (1000)",
 )
 
+parser.add_argument(
+    "--loss_function",
+    default="CrossEntropyLoss",
+    type=str,
+    help="Specifies the loss function to be used for training. Default is 'CrossEntropyLoss'",
+)
+
 args = parser.parse_args()
 
 NUM_EPOCHS = args.num_epochs
@@ -89,9 +96,12 @@ BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 MODEL_NAME = args.model_name
 NUM_OF_AUG_IMG = args.number_of_augmented_image
+LOSS_FN = args.loss_function
 
+print("-" * 50 + "\n")
 print(f"[INFO] Model: {MODEL_NAME}")
-print(f"[INFO] Number of epochs: {NUM_EPOCHS}")
+print(f"[INFO] Loss Function: {LOSS_FN}")
+print(f"[INFO] Epochs: {NUM_EPOCHS}")
 print(f"[INFO] Batch size: {BATCH_SIZE}")
 print(f"[INFO] Learning rate: {LEARNING_RATE}")
 print(f"[INFO] Number of Augmented Image: {NUM_OF_AUG_IMG}")
@@ -101,13 +111,16 @@ full_data_dir = args.full_dir
 half_data_dir = args.half_dir
 overflowing_data_dir = args.overflowing_dir
 
+print("-" * 50 + "\n")
 print(f"[INFO] Data dir: {data_dir}")
 print(f"[INFO] Full_data dir: {full_data_dir}")
 print(f"[INFO] Half_data dir: {half_data_dir}")
 print(f"[INFO] Oveflowing_data dir: {overflowing_data_dir}")
 
 # Setup target device
+torch.cuda.empty_cache()
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 # Creating the model architecture
 model, data_transform = model_builder.create_model(model_name=MODEL_NAME, num_classes=3)
@@ -129,19 +142,18 @@ train_dataloader, test_dataloader, class_names = data_setup.create_dataloaders(
     transform=data_transform,
     batch_size=BATCH_SIZE,
 )
-# Set loss and optimizer
-loss_fn = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 
-# Set evaluation metrics
+
+# Set evaluation metric
+# Beta = 0.5
 fbeta_score = FBetaScore(task="multiclass", num_classes=len(class_names), beta=0.5).to(
     device
 )
-acc_score = Accuracy(task="multiclass", num_classes=len(class_names)).to(device)
 
 
 def create_writer(
     experiment_name=f"{NUM_OF_AUG_IMG}_data",
+    loss_fn=f"{LOSS_FN}_fn",
     model_name=f"{MODEL_NAME}",
     epoch=f"{NUM_EPOCHS}_epochs",
     lr=f"{LEARNING_RATE}_lr",
@@ -165,43 +177,73 @@ def create_writer(
     """
     # Get timestamp of current date (all experiments on certain day live in same folder)
     timestamp = datetime.now().strftime(
-        "%Y-%m-%d"
-    )  # returns current date in YYYY-MM-DD format
+        "%d-%m-%Y,%H-%M-%S"
+    )  # returns current date in DD-MM-YYYY,H-M-S format
 
-    log_dir_parts = ["runs", timestamp, experiment_name, model_name, epoch, lr]
+    log_dir_parts = ["runs", timestamp, experiment_name, model_name, loss_fn, epoch, lr]
 
     # Create log directory path
     log_dir = os.path.join(*log_dir_parts)
+    print(log_dir)
 
     print(f"[INFO] Created SummaryWriter, saving to: {log_dir}...")
     return SummaryWriter(log_dir=log_dir)
 
 
-# Start the timer
-start_time = timer()
+# Set loss and optimizer
+if LOSS_FN == "CrossEntropyLoss":
+    cross_entropy_loss = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
+    # Start the timer
+    start_time = timer()
 
-# Starting training
-results = engine.train(
-    model=model,
-    train_dataloader=train_dataloader,
-    test_dataloader=test_dataloader,
-    optimizer=optimizer,
-    loss_fn=loss_fn,
-    epochs=NUM_EPOCHS,
-    fbeta_score=fbeta_score,
-    acc_score=acc_score,
-    device=device,
-    writer=create_writer(),
-)
+    # Starting training
+    results = engine.train(
+        model=model,
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
+        optimizer=optimizer,
+        loss_fn=cross_entropy_loss,
+        epochs=NUM_EPOCHS,
+        fbeta_score=fbeta_score,
+        device=device,
+        writer=create_writer(),
+    )
 
-# End the timer and print out how long it took
-end_time = timer()
-print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
+    # End the timer and print out how long it took
+    end_time = timer()
+    print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
+
+elif LOSS_FN == "FocalLoss":
+    focal_loss = focalloss.FocalLoss(gamma=2, alpha=0.25)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
+    # Start the timer
+    start_time = timer()
+
+    # Starting training
+    results = engine.train(
+        model=model,
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
+        optimizer=optimizer,
+        loss_fn=focal_loss,
+        epochs=NUM_EPOCHS,
+        fbeta_score=fbeta_score,
+        device=device,
+        writer=create_writer(),
+    )
+
+    # End the timer and print out how long it took
+    end_time = timer()
+    print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
+
+else:
+    print("Try 'CrossEntropyLoss' or 'FocalLoss'")
 
 
 # Save the model
 model_filepath = (
-    f"01_{MODEL_NAME}_{NUM_OF_AUG_IMG}data_{NUM_EPOCHS}_epochs_{LEARNING_RATE}_lr.pth"
+    f"1.1_{MODEL_NAME}_{NUM_OF_AUG_IMG}data_{NUM_EPOCHS}_epochs_{LEARNING_RATE}_lr.pth"
 )
 utils.save_model(model=model, target_dir="models", model_name=model_filepath)
 print("-" * 50 + "\n")
