@@ -22,7 +22,7 @@ import torch
 import torchvision
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 
 
 def create_dataframe(data_path):
@@ -74,30 +74,35 @@ def augment_dataset(class_dir, number_of_image):
     Returns:
         torch.utils.data.Dataset: A PyTorch dataset object containing the images.
     """
-    transform = transforms.Compose(
-        [
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(20),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-        ]
-    )
+    if number_of_image != 0:
+        transform = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(20),
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+            ]
+        )
 
-    dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
+        dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
 
-    count = len(dataset)
-    if count < number_of_image:
-        while count < number_of_image:
-            for i, (image, label) in enumerate(dataset):
-                new_filename = f"image{count + i + 1:03d}.jpeg"
-                new_path = os.path.join(class_dir, new_filename)
-                torchvision.utils.save_image(image, new_path)
-                count = len(os.listdir(class_dir))
-                if count >= number_of_image:
-                    break
-            dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
+        count = len(dataset)
+        if count < number_of_image:
+            while count < number_of_image:
+                for i, (image, label) in enumerate(dataset):
+                    new_filename = f"image{count + i + 1:03d}.jpeg"
+                    new_path = os.path.join(class_dir, new_filename)
+                    torchvision.utils.save_image(image, new_path)
+                    count = len(os.listdir(class_dir))
+                    if count >= number_of_image:
+                        break
+                dataset = torchvision.datasets.ImageFolder(
+                    class_dir, transform=transform
+                )
+        return
 
-    return
+    else:
+        pass
 
 
 def find_classes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, int]]:
