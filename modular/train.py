@@ -9,7 +9,7 @@ import os
 
 import torch
 from torchmetrics import Accuracy, FBetaScore
-import data_setup, engine, model_builder, utils, focalloss
+import data_setup, engine, model_builder, utils
 from torch.utils.tensorboard import SummaryWriter
 import warnings
 
@@ -143,7 +143,6 @@ train_dataloader, test_dataloader, class_names = data_setup.create_dataloaders(
     batch_size=BATCH_SIZE,
 )
 
-
 # Set evaluation metric
 # Beta = 0.5
 fbeta_score = FBetaScore(task="multiclass", num_classes=len(class_names), beta=0.5).to(
@@ -184,7 +183,6 @@ def create_writer(
 
     # Create log directory path
     log_dir = os.path.join(*log_dir_parts)
-    print(log_dir)
 
     print(f"[INFO] Created SummaryWriter, saving to: {log_dir}...")
     return SummaryWriter(log_dir=log_dir)
@@ -194,6 +192,9 @@ def create_writer(
 if LOSS_FN == "CrossEntropyLoss":
     cross_entropy_loss = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
+    # Set the manual seeds
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
     # Start the timer
     start_time = timer()
 
@@ -214,9 +215,12 @@ if LOSS_FN == "CrossEntropyLoss":
     end_time = timer()
     print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
 
-elif LOSS_FN == "FocalLoss":
-    focal_loss = focalloss.FocalLoss(gamma=2, alpha=0.25)
+elif LOSS_FN == "MultiMarginLoss":
+    mm_loss = torch.nn.MultiMarginLoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
+    # Set the manual seeds
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
     # Start the timer
     start_time = timer()
 
@@ -226,7 +230,7 @@ elif LOSS_FN == "FocalLoss":
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
         optimizer=optimizer,
-        loss_fn=focal_loss,
+        loss_fn=mm_loss,
         epochs=NUM_EPOCHS,
         fbeta_score=fbeta_score,
         device=device,
@@ -238,7 +242,7 @@ elif LOSS_FN == "FocalLoss":
     print(f"[INFO] Total training time: {end_time-start_time:.3f} seconds")
 
 else:
-    print("Try 'CrossEntropyLoss' or 'FocalLoss'")
+    print("Try 'CrossEntropyLoss' or 'BCELoss'")
 
 
 # Save the model
