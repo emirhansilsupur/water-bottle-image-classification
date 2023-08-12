@@ -62,47 +62,40 @@ def create_dataframe(data_path):
     return train_df, test_df
 
 
-def augment_dataset(class_dir, number_of_image):
+def augment_dataset(class_dir):
     """
     Loads and augments images from a directory using torchvision's ImageFolder class.
 
     Args:
         class_dir (str): Path to directory containing images.
-        number_of_image (int): The argument specifies the desired number of augmented images to generate if the initial dataset
-        has less than this number of images.
 
     Returns:
         torch.utils.data.Dataset: A PyTorch dataset object containing the images.
     """
-    if number_of_image != 0:
-        transform = transforms.Compose(
-            [
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomRotation(20),
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-            ]
-        )
 
-        dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
+    transform = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(20),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+        ]
+    )
 
-        count = len(dataset)
-        if count < number_of_image:
-            while count < number_of_image:
-                for i, (image, label) in enumerate(dataset):
-                    new_filename = f"image{count + i + 1:03d}.jpeg"
-                    new_path = os.path.join(class_dir, new_filename)
-                    torchvision.utils.save_image(image, new_path)
-                    count = len(os.listdir(class_dir))
-                    if count >= number_of_image:
-                        break
-                dataset = torchvision.datasets.ImageFolder(
-                    class_dir, transform=transform
-                )
-        return
+    dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
 
-    else:
-        pass
+    count = len(dataset)
+    if count < 500:
+        while count < 500:
+            for i, (image, label) in enumerate(dataset):
+                new_filename = f"image{count + i + 1:03d}.jpeg"
+                new_path = os.path.join(class_dir, new_filename)
+                torchvision.utils.save_image(image, new_path)
+                count = len(os.listdir(class_dir))
+                if count >= 500:
+                    break
+            dataset = torchvision.datasets.ImageFolder(class_dir, transform=transform)
+    return
 
 
 def find_classes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, int]]:
