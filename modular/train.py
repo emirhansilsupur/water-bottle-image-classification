@@ -76,13 +76,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--number_of_augmented_image",
-    default=1000,
-    type=int,
-    help="The argument specifies the default number of augmented images to generate during image data augmentation. default (1000)",
-)
-
-parser.add_argument(
     "--loss_function",
     default="CrossEntropyLoss",
     type=str,
@@ -95,7 +88,6 @@ NUM_EPOCHS = args.num_epochs
 BATCH_SIZE = args.batch_size
 LEARNING_RATE = args.learning_rate
 MODEL_NAME = args.model_name
-NUM_OF_AUG_IMG = args.number_of_augmented_image
 LOSS_FN = args.loss_function
 
 print("-" * 50 + "\n")
@@ -104,7 +96,6 @@ print(f"[INFO] Loss Function: {LOSS_FN}")
 print(f"[INFO] Epochs: {NUM_EPOCHS}")
 print(f"[INFO] Batch size: {BATCH_SIZE}")
 print(f"[INFO] Learning rate: {LEARNING_RATE}")
-print(f"[INFO] Number of Augmented Image: {NUM_OF_AUG_IMG}")
 
 data_dir = args.data_dir
 full_data_dir = args.full_dir
@@ -126,11 +117,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, data_transform = model_builder.create_model(model_name=MODEL_NAME, num_classes=3)
 
 # Augmenting data from all types of water levels
-data_setup.augment_dataset(class_dir=full_data_dir, number_of_image=NUM_OF_AUG_IMG)
-data_setup.augment_dataset(class_dir=half_data_dir, number_of_image=NUM_OF_AUG_IMG)
-data_setup.augment_dataset(
-    class_dir=overflowing_data_dir, number_of_image=NUM_OF_AUG_IMG
-)
+data_setup.augment_dataset(class_dir=full_data_dir)
+data_setup.augment_dataset(class_dir=half_data_dir)
+data_setup.augment_dataset(class_dir=overflowing_data_dir)
 
 # Creating train and test dataframes
 train_df, test_df = data_setup.create_dataframe(data_path=data_path)
@@ -151,7 +140,6 @@ fbeta_score = FBetaScore(task="multiclass", num_classes=len(class_names), beta=0
 
 
 def create_writer(
-    experiment_name=f"{NUM_OF_AUG_IMG}_data",
     loss_fn=f"{LOSS_FN}_fn",
     model_name=f"{MODEL_NAME}",
     epoch=f"{NUM_EPOCHS}_epochs",
@@ -179,7 +167,7 @@ def create_writer(
         "%d-%m-%Y,%H-%M-%S"
     )  # returns current date in DD-MM-YYYY,H-M-S format
 
-    log_dir_parts = ["runs", timestamp, experiment_name, model_name, loss_fn, epoch, lr]
+    log_dir_parts = ["runs", timestamp, model_name, loss_fn, epoch, lr]
 
     # Create log directory path
     log_dir = os.path.join(*log_dir_parts)
@@ -247,7 +235,7 @@ else:
 
 # Save the model
 model_filepath = (
-    f"1.1_{MODEL_NAME}_{NUM_OF_AUG_IMG}data_{NUM_EPOCHS}_epochs_{LEARNING_RATE}_lr.pth"
+    f"1_{MODEL_NAME}_{NUM_EPOCHS}_epochs_loss_function_{LOSS_FN}_{LEARNING_RATE}_lr.pth"
 )
 utils.save_model(model=model, target_dir="models", model_name=model_filepath)
 print("-" * 50 + "\n")
