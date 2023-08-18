@@ -55,16 +55,17 @@ def create_dataframe(data_path):
         }
     )
 
-    train_df, test_df = train_test_split(
+    train_df, val_df = train_test_split(
         df, test_size=0.2, shuffle=True, random_state=42, stratify=df["classes"]
     )
 
-    return train_df, test_df
+    return train_df, val_df
 
 
 def augment_dataset(class_dir):
     """
-    Loads and augments images from a directory using torchvision's ImageFolder class.
+    Augments the dataset by applying transformations to existing images
+    and saving them until there are at least 500 images in the directory.
 
     Args:
         class_dir (str): Path to directory containing images.
@@ -193,33 +194,33 @@ class CustomImageFolder(Dataset):
 
 
 def create_dataloaders(
-    train_dir: str, test_dir: str, transform: transforms.Compose, batch_size: int
+    train_dir: str, val_dir: str, transform: transforms.Compose, batch_size: int
 ) -> Tuple[DataLoader, DataLoader, List[str]]:
     """
     Creates and returns train and test dataloaders along with class names.
 
     Args:
     - train_dir: A string representing the path to the directory containing the training data
-    - test_dir: A string representing the path to the directory containing the test data
+    - val_dir: A string representing the path to the directory containing the val data
     - transform: torchvision.transforms.Compose object containing image transformations
     - batch_size: An integer representing the batch size for the dataloaders
 
     Returns:
     - Tuple containing:
         - Train DataLoader object
-        - Test DataLoader object
+        - Validation DataLoader object
         - A list of class names
     """
     train_data_transformed = CustomImageFolder(train_dir, transform=transform)
-    test_data_transformed = CustomImageFolder(test_dir, transform=transform)
+    val_data_transformed = CustomImageFolder(val_dir, transform=transform)
 
     class_names = train_data_transformed.classes
 
     train_dataloader = DataLoader(
         train_data_transformed, batch_size=batch_size, shuffle=True
     )
-    test_dataloader = DataLoader(
-        test_data_transformed, batch_size=batch_size, shuffle=False
+    val_dataloader = DataLoader(
+        val_data_transformed, batch_size=batch_size, shuffle=False
     )
 
-    return train_dataloader, test_dataloader, class_names
+    return train_dataloader, val_dataloader, class_names
