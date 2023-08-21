@@ -1,9 +1,9 @@
 """
-Contains functions for training and validation a PyTorch model.
+Contains functions for training and testing a PyTorch model.
 
 Functions:
 - train_step(model, dataloader, loss_fn, optimizer, fbeta_score, f1_score, device)
-- val_step(model, dataloader, loss_fn, fbeta_score, f1_score, device)
+- test_step(model, dataloader, loss_fn, fbeta_score, f1_score, device)
 - train(model, train_dataloader, test_dataloader, loss_fn, optimizer, epochs, device)
 """
 import torch
@@ -51,9 +51,9 @@ def train_step(model, dataloader, loss_fn, optimizer, fbeta_score, device):
     return train_loss, train_fbeta_score
 
 
-def val_step(model, dataloader, loss_fn, fbeta_score, device):
+def test_step(model, dataloader, loss_fn, fbeta_score, device):
     """
-    Evaluate a PyTorch model on a val dataset.
+    Evaluate a PyTorch model on a test dataset.
 
     Args:
         model (torch.nn.Module): The PyTorch model to be evaluated.
@@ -66,26 +66,26 @@ def val_step(model, dataloader, loss_fn, fbeta_score, device):
         Tuple[float, float, float]: The average test loss and F-beta score over the test dataset.
     """
     model.eval()
-    val_loss, val_fbeta_score = 0, 0
+    test_loss, test_fbeta_score = 0, 0
 
     with torch.inference_mode():
         for batch, (X, y) in enumerate(dataloader):
             X, y = X.to(device), y.to(device)
             y_pred = model(X)
             loss = loss_fn(y_pred, y)
-            val_loss += loss
-            val_fbeta_score += fbeta_score(y_pred, y)
+            test_loss += loss
+            test_fbeta_score += fbeta_score(y_pred, y)
 
-        val_loss /= len(dataloader)
-        val_fbeta_score /= len(dataloader)
+        test_loss /= len(dataloader)
+        test_fbeta_score /= len(dataloader)
 
-    return val_loss, val_fbeta_score
+    return test_loss, test_fbeta_score
 
 
 def train(
     model,
     train_dataloader,
-    val_dataloader,
+    test_dataloader,
     loss_fn,
     optimizer,
     epochs,
@@ -99,7 +99,7 @@ def train(
     Args:
     model (nn.Module): The PyTorch model to train.
     train_dataloader (DataLoader): The DataLoader object containing the training dataset.
-    val_dataloader (DataLoader): The DataLoader object containing the validation dataset.
+    test_dataloader (DataLoader): The DataLoader object containing the testing dataset.
     loss_fn (nn.Module): The loss function to use during training.
     optimizer (Optimizer): The optimizer to use during training.
     epochs (int): The number of epochs to train the model for.
@@ -111,24 +111,24 @@ def train(
     dict: A dictionary containing the following metrics for each epoch:
     - train_loss: the average training loss for the epoch
     - train_fbeta_score: the average F-beta score for the epoch using the training set
-    - val_loss: the average validation loss for the epoch
-    - val_fbeta_score: the average F-beta score for the epoch using the validation set
+    - test_loss: the average testing loss for the epoch
+    - test_fbeta_score: the average F-beta score for the epoch using the testing set
 
     """
 
     results = {
         "train_loss": [],
         "train_fbeta_score": [],
-        "val_loss": [],
-        "val_fbeta_score": [],
+        "test_loss": [],
+        "test_fbeta_score": [],
     }
 
     for epoch in tqdm(range(epochs)):
         train_loss, train_fbeta_score = train_step(
             model, train_dataloader, loss_fn, optimizer, fbeta_score, device
         )
-        val_loss, val_fbeta_score = val_step(
-            model, val_dataloader, loss_fn, fbeta_score, device
+        test_loss, test_fbeta_score = test_step(
+            model, test_dataloader, loss_fn, fbeta_score, device
         )
         # scheduler.step()
 
@@ -136,29 +136,29 @@ def train(
             f"Epoch: {epoch+1} \n "
             f"train_loss: {train_loss:.4f} | "
             f"train_f0.5_score: {np.round(train_fbeta_score.item(),2)*100}% | \n "
-            f"val_loss: {val_loss:.4f} | "
-            f"val_f0.5_score: {np.round(val_fbeta_score.item(),2)*100}% | "
+            f"val_loss: {test_loss:.4f} | "
+            f"val_f0.5_score: {np.round(test_fbeta_score.item(),2)*100}% | "
         )
         # --> lr: {scheduler.get_last_lr()[0]}
 
         results["train_loss"].append(train_loss.cpu().detach().numpy())
         results["train_fbeta_score"].append(train_fbeta_score.cpu().detach().numpy())
-        results["val_loss"].append(val_loss.cpu().detach().numpy())
-        results["val_fbeta_score"].append(val_fbeta_score.cpu().detach().numpy())
+        results["test_loss"].append(test_loss.cpu().detach().numpy())
+        results["test_fbeta_score"].append(test_fbeta_score.cpu().detach().numpy())
 
         # if epoch % 5 == 0:
 
         if writer:
             writer.add_scalars(
                 main_tag="Loss",
-                tag_scalar_dict={"train_loss": train_loss, "val_loss": val_loss},
+                tag_scalar_dict={"train_loss": train_loss, "test_loss": test_loss},
                 global_step=epoch,
             )
             writer.add_scalars(
                 main_tag="F-Beta(0.5) Scoree",
                 tag_scalar_dict={
                     "train_f0.5": train_fbeta_score,
-                    "val_f0.5": val_fbeta_score,
+                    "test_f0.5": test_fbeta_score,
                 },
                 global_step=epoch,
             )
