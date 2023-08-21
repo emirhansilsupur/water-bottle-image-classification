@@ -122,12 +122,12 @@ data_setup.augment_dataset(class_dir=half_data_dir)
 data_setup.augment_dataset(class_dir=overflowing_data_dir)
 
 # Creating train and test dataframes
-train_df, val_df = data_setup.create_dataframe(data_path=data_path)
+train_df, test_df = data_setup.create_dataframe(data_path=data_path)
 
 # Create dataloaders
-train_dataloader, val_dataloader, class_names = data_setup.create_dataloaders(
+train_dataloader, test_dataloader, class_names = data_setup.create_dataloaders(
     train_dir=train_df,
-    val_dir=val_df,
+    test_dir=test_df,
     transform=data_transform,
     batch_size=BATCH_SIZE,
 )
@@ -190,7 +190,7 @@ if LOSS_FN == "CrossEntropyLoss":
     results = engine.train(
         model=model,
         train_dataloader=train_dataloader,
-        val_dataloader=val_dataloader,
+        test_dataloader=test_dataloader,
         optimizer=optimizer,
         loss_fn=cross_entropy_loss,
         epochs=NUM_EPOCHS,
@@ -216,7 +216,7 @@ elif LOSS_FN == "MultiMarginLoss":
     results = engine.train(
         model=model,
         train_dataloader=train_dataloader,
-        val_dataloader=val_dataloader,
+        test_dataloader=test_dataloader,
         optimizer=optimizer,
         loss_fn=mm_loss,
         epochs=NUM_EPOCHS,
