@@ -19,6 +19,11 @@ def create_model(model_name: str, num_classes: int, freeze_features: bool = True
     - model (torch.nn.Module): The created PyTorch model.
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Set the seed for general torch operations
+    torch.manual_seed(42)
+    # Set the seed for CUDA torch operations (ones that happen on the GPU)
+    torch.cuda.manual_seed(42)
+
     # Create model based on the given model name
     if model_name == "EfficientNet_B0":
         weights = torchvision.models.EfficientNet_B0_Weights.DEFAULT
