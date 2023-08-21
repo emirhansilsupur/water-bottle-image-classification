@@ -55,11 +55,11 @@ def create_dataframe(data_path):
         }
     )
 
-    train_df, val_df = train_test_split(
+    train_df, test_df = train_test_split(
         df, test_size=0.2, shuffle=True, random_state=42, stratify=df["classes"]
     )
 
-    return train_df, val_df
+    return train_df, test_df
 
 
 def augment_dataset(class_dir):
@@ -194,33 +194,33 @@ class CustomImageFolder(Dataset):
 
 
 def create_dataloaders(
-    train_dir: str, val_dir: str, transform: transforms.Compose, batch_size: int
+    train_dir: str, test_dir: str, transform: transforms.Compose, batch_size: int
 ) -> Tuple[DataLoader, DataLoader, List[str]]:
     """
     Creates and returns train and test dataloaders along with class names.
 
     Args:
     - train_dir: A string representing the path to the directory containing the training data
-    - val_dir: A string representing the path to the directory containing the val data
+    - test_dir: A string representing the path to the directory containing the testing data
     - transform: torchvision.transforms.Compose object containing image transformations
     - batch_size: An integer representing the batch size for the dataloaders
 
     Returns:
     - Tuple containing:
         - Train DataLoader object
-        - Validation DataLoader object
+        - Test DataLoader object
         - A list of class names
     """
     train_data_transformed = CustomImageFolder(train_dir, transform=transform)
-    val_data_transformed = CustomImageFolder(val_dir, transform=transform)
+    test_data_transformed = CustomImageFolder(test_dir, transform=transform)
 
     class_names = train_data_transformed.classes
 
     train_dataloader = DataLoader(
         train_data_transformed, batch_size=batch_size, shuffle=True
     )
-    val_dataloader = DataLoader(
-        val_data_transformed, batch_size=batch_size, shuffle=False
+    test_dataloader = DataLoader(
+        test_data_transformed, batch_size=batch_size, shuffle=False
     )
 
-    return train_dataloader, val_dataloader, class_names
+    return train_dataloader, test_dataloader, class_names
