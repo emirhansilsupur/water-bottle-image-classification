@@ -131,14 +131,14 @@ def train(
             model, test_dataloader, loss_fn, fbeta_score, device
         )
         # scheduler.step()
-
-        print(
-            f"Epoch: {epoch+1} \n "
-            f"train_loss: {train_loss:.4f} | "
-            f"train_f0.5_score: {np.round(train_fbeta_score.item(),2)*100}% | \n "
-            f"val_loss: {test_loss:.4f} | "
-            f"val_f0.5_score: {np.round(test_fbeta_score.item(),2)*100}% | "
-        )
+        if epoch % 5 == 0:
+            print(
+                f"Epoch: {epoch} \n "
+                f"train_loss: {train_loss:.4f} | "
+                f"train_f0.5_score: {np.round(train_fbeta_score.item(),2)*100}% | \n "
+                f"test_loss: {test_loss:.4f} | "
+                f"test_f0.5_score: {np.round(test_fbeta_score.item(),2)*100}% | "
+            )
         # --> lr: {scheduler.get_last_lr()[0]}
 
         results["train_loss"].append(train_loss.cpu().detach().numpy())
