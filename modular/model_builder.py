@@ -63,4 +63,9 @@ def create_model(model_name: str, num_classes: int, freeze_features: bool = True
         model.fc = torch.nn.Linear(num_ftrs, num_classes).to(device)
         model_transform = weights.transforms()
 
+    else:
+        raise ValueError(
+            "Invalid model name. Please choose from 'EfficientNetB0', 'ResNet18', or 'GoogLeNet'."
+        )
+
     return model, model_transform
