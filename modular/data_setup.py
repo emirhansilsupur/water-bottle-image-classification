@@ -217,10 +217,14 @@ def create_dataloaders(
     class_names = train_data_transformed.classes
 
     train_dataloader = DataLoader(
-        train_data_transformed, batch_size=batch_size, shuffle=True
+        train_data_transformed,
+        batch_size=batch_size,
+        shuffle=True,
     )
     test_dataloader = DataLoader(
-        test_data_transformed, batch_size=batch_size, shuffle=False
+        test_data_transformed,
+        batch_size=batch_size,
+        shuffle=False,
     )
 
     return train_dataloader, test_dataloader, class_names
