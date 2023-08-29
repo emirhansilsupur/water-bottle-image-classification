@@ -235,7 +235,7 @@ else:
 
 # Save the model
 model_filepath = (
-    f"1_{MODEL_NAME}_{NUM_EPOCHS}_epochs_loss_function_{LOSS_FN}_{LEARNING_RATE}_lr.pth"
+    f"{MODEL_NAME}_{NUM_EPOCHS}_epochs_loss_function_{LOSS_FN}_{LEARNING_RATE}_lr.pth"
 )
 utils.save_model(model=model, target_dir="models", model_name=model_filepath)
 print("-" * 50 + "\n")
