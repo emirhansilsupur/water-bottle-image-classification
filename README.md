@@ -1,6 +1,6 @@
 # Water Level Classification for Bottles
 
-![](app.gif)
+![](app.GIF)
 
 ## 1. Introduction
 
