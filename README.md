@@ -28,7 +28,7 @@ In this project, we used the architectures of EfficientNet B0, ResNet18, and Goo
 
 ### 4.1. F-beta Score 
 
-The F-beta score was chosen as the evaluation metric due to imbalanced dataset distribution. The F-beta score balances the precision and recall metrics to provide a comprehensive assessment of classification performance. The beta parameter is used to adjust the balance between precision and recall. The selection of beta=0.5 aims to prioritize precision. In this project, minimizing false negatives is crucial rather than giving false alarms. Thus, choosing beta=0.5 reflects the use of a precision-focused metric.
+The F-beta score was chosen as the evaluation metric due to imbalanced dataset distribution. The beta parameter is used to adjust the balance between precision and recall. The selection of beta=0.5 aims to prioritize precision. In this project, minimizing false negatives is crucial rather than giving false alarms. Thus, choosing beta=0.5 reflects the use of a precision-focused metric.
 
 ### 4.2. Loss Function
 
