@@ -2,7 +2,7 @@
 
 ![](app.GIF)
 
-Click [documentation](demos\READMEapp.md) for usage.
+Click [documentation](demos/READMEapp.md) for usage.
 
 ## 1. Introduction
 
