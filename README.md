@@ -2,6 +2,8 @@
 
 ![](app.GIF)
 
+Click [documentation](demos\READMEapp.md) for usage.
+
 ## 1. Introduction
 
 This project aims to develop a computer vision model that accurately classifies water bottle images based on their water levels. In this project, a dataset of water bottle images will be used, and each image will be labeled as "Full Water Level," "Half Water Level," or "Overflowing." 
